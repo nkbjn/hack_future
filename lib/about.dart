@@ -1,11 +1,11 @@
-import 'package:hack_future/main.dart';
 import "package:flutter/material.dart";
 import 'package:http/http.dart' as http;
-import 'post.dart';
 import 'dart:convert';
-import 'package:hack_future/flight.dart' as flight;
-import 'package:hack_future/map.dart' as map;
+import 'package:hack_future/step.dart' as step;
+import 'package:hack_future/phase.dart' as phase;
 
+//プロフィールページ
+//location/update
 
 class AboutPage extends StatefulWidget{
   @override
@@ -19,28 +19,26 @@ class _AboutPageState extends State<AboutPage> with SingleTickerProviderStateMix
   final FocusNode myFocusNode = FocusNode();
 
   //globalkey でformの入力を行う
-
   final _formKey = GlobalKey<FormState>();
 
   String name = "";
   String tel = "";
-  String url = "http://e739fe18.ngrok.io/location/profile";
+  String url = "http://c1d204d8.ngrok.io/location/update";
 
   TextEditingController user = TextEditingController();
 
-  //サーバにnameと電話番号を送る
+  int count = 0;
+  String _message = 'Tap this button.';
+
+
+  String accountSid = ""; //YOUR Account SID
+  String authToken = ""; // Your Auth Token
+//  client = require('twilio')(accountSid, authToken);
+
+  //TODO サーバにnameと電話番号を送る
   //TODO ngrokは更新される
-//
-//  UseProfileRequest(String username) async{
-//    String profile = url +  username;
-//    var res = await http.get(profile,headers:{"Accept":"application/json"});
-//    var resBody = json.decode(res.body);
-//    name = resBody["name"];
-//    tel = resBody["tel"];
-//    setState(() {
-//      print("success");
-//    });
-//  }
+
+
 
   @override
   void initState() {
@@ -158,6 +156,7 @@ class _AboutPageState extends State<AboutPage> with SingleTickerProviderStateMix
                                   )
                                 ],
                               )),
+
                           Padding(
                               padding: EdgeInsets.only(
                                   left: 25.0, right: 25.0, top: 25.0),
@@ -236,6 +235,60 @@ class _AboutPageState extends State<AboutPage> with SingleTickerProviderStateMix
                               )),
 
                           !_status ? _getActionButtons() : Container(),
+
+                          Padding(padding: EdgeInsets.all(30)),
+
+                          Row(
+                            children: <Widget>[
+                              Padding(padding: EdgeInsets.all(45)),
+
+                              SizedBox.fromSize(
+                                size: Size(75, 75), // button width and height
+                                child: ClipOval(
+                                  child: Material(
+                                    color: Colors.orange, // button color
+                                    child: InkWell(
+                                      splashColor: Colors.green, // splash color
+                                      onTap: () {
+                                        _onPressedTEL();
+                                      }, // button pressed
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: <Widget>[
+                                          Icon(Icons.call), // icon
+                                          Text("Call"), // text
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              Padding(padding: EdgeInsets.all(45)),
+
+                              SizedBox.fromSize(
+                                size: Size(75, 75), // button width and height
+                                child: ClipOval(
+                                  child: Material(
+                                    color: Colors.orange, // button color
+                                    child: InkWell(
+                                      splashColor: Colors.green, // splash color
+                                      onTap: () {
+                                        _onPressedSMS();
+                                      }, // button pressed
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: <Widget>[
+                                          Icon(Icons.message), // icon
+                                          Text("SMS"), // text
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -272,22 +325,19 @@ class _AboutPageState extends State<AboutPage> with SingleTickerProviderStateMix
                     textColor: Colors.white,
                     color: Colors.green,
                     onPressed: () {
-                      setState(() {
-                        _status = true;
-                        FocusScope.of(context).requestFocus(FocusNode());
-                        print("Name : ${user} deeeeeeeeeeeeeeeeeeeeeeeeeeee");
-                        print('/////////////////////////////////////////////////');
-//
-//                        //ここでユーザ名をサーバに送る
-//                        UseProfileRequest(user.text);
-                        flight.SetUserNameInFlight(user.text);
-                        map.SetUserNameInMap(user.text);
-                        print('/////////////////////////////////////////////////');
+                      _status = true;
+                      FocusScope.of(context).requestFocus(FocusNode());
+//                      debugPrint("Name : ${user}");
 
-                      });
+                      //ここでユーザ名をサーバに送る
+                      //ここでのngrokはok
+                      step.SetUserNameInMap(user.text);
+                      phase.SetUserNameInFlight(user.text);
+
                     },
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20.0)),
+
                   )),
             ),
             flex: 2,
@@ -313,9 +363,31 @@ class _AboutPageState extends State<AboutPage> with SingleTickerProviderStateMix
             ),
             flex: 2,
           ),
+
+
         ],
       ),
     );
+  }
+
+  //TODO Twilio APIを用いて電話とSMS
+
+  void _onPressedTEL() {
+    setState(() {
+      ++count;
+      _message = 'Tap count $count';
+    });
+//    client.calls.create(
+//        to = "+8108057160092",
+//    from = "+8108057160092",
+//    url = "");
+  }
+
+  void _onPressedSMS() {
+    setState(() {
+      ++count;
+      _message = 'Tap count $count';
+    });
   }
 
   Widget _getEditIcon() {
@@ -337,4 +409,3 @@ class _AboutPageState extends State<AboutPage> with SingleTickerProviderStateMix
     );
   }
 }
-

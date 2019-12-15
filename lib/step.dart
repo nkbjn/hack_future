@@ -6,37 +6,39 @@ import "acceralation.dart" as acc;
 import 'package:http/http.dart' as http;
 import 'post.dart';
 import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'dart:math'as math;
 import 'package:flutter_compass/flutter_compass.dart';
+
 import 'package:vibration/vibration.dart';
 
+//import 'package:geolocator/geolocator.dart';
 
+
+//足跡ページ
+//location/update
 
 int step_sum = 0;
 int step_now = 0;
-String name = '';
+String name;
 double _direction;
 
-double North = 45.0;
-double West = 135.0;
-double South = 225.0;
-double East = 315.0;
-
+double north = 45.0;
+double west = 135.0;
+double south = 225.0;
+double east = 315.0;
 
 //TODO サーバからはお宝があった場合true,お宝がなかった場合false
 //TODO trueの場合のファンクションを考える
 
 
-class MapPage extends StatefulWidget {
+class StepPage extends StatefulWidget {
 
   @override
-  _MapPageState createState() => _MapPageState();
+  _StepPageState createState() => _StepPageState();
 }
 
-class _MapPageState extends State<MapPage> {
+class _StepPageState extends State<StepPage> {
 
-  int distance = 0;
+  int distance = 99999;
   bool get = false;
 
   acc.Acceralation acceralation;
@@ -46,19 +48,30 @@ class _MapPageState extends State<MapPage> {
 
   List<StreamSubscription<dynamic>> _streamSubscriptions = <StreamSubscription<dynamic>>[];
 
-  //x,y,z xは縦軸，yは横軸，zは奥行き
-  //gyro : デバイスの回転を示す
-
   AnimationController _controller;
-  int _radioValue;
+
+//  Position position;
 
   @override
   void initState() {
     super.initState();
     print("init start");
     getacceralation();
-    Timer.periodic(const Duration(milliseconds: 500), getData);
-    Timer.periodic(const Duration(milliseconds: 500), UserStepRequest);
+    Timer.periodic(Duration(milliseconds: 500), getStep);
+    Timer.periodic(Duration(milliseconds: 500), UserStepRequest);
+
+//    //バイブレーション機能
+//    _vibrate();
+//    FlutterCompass.events.listen((double direction) {
+//      setState(() {
+//        _direction = direction;
+//        debugPrint("direction : $_direction");
+//      });
+//    });
+
+    //現在地取得
+//    _getLocation(context);
+
   }
 
   @override
@@ -68,40 +81,25 @@ class _MapPageState extends State<MapPage> {
     final String gyro_x = _gyroscopeValues[0].toStringAsFixed(2);
     final String gyro_y = _gyroscopeValues[1].toStringAsFixed(2);
 
+//    debugPrint("$position");
+
     return MaterialApp(
         debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(
-          child: Column(
+        home: Scaffold(
+          body: Center(
+            child: Column(
               children: <Widget>[
-
-                Container(
-                    width: 300.0,
-                    height: 300.0,
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: NetworkImage(
-                            "https://media.qikeru.me/wp-content/uploads/2015/01/zahyou2.png"),
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                ),
+                Padding(padding: EdgeInsets.all(50)),
 
                 Row(
                   children: <Widget>[
                     Padding(padding: EdgeInsets.all(30)),
 
                     Container(
-                        width: 140.0,
-                        height: 140.0,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          image: DecorationImage(
-                            image: NetworkImage(
-                                "https://www.silhouette-illust.com/wp-content/uploads/2016/07/4515-300x300.jpg"),
-                            fit: BoxFit.cover,
-                          ),
-                        )
+                        child: Image.asset("lib/images/step.png",
+                          height: 100,
+                          width: 100,
+                          fit: BoxFit.fitWidth,)
                     ),
 
                     Padding(padding: EdgeInsets.all(10)),
@@ -112,32 +110,43 @@ class _MapPageState extends State<MapPage> {
                   ],
                 ),
 
-                
-                Padding(padding: EdgeInsets.all(10)),
+
+                Padding(padding: EdgeInsets.all(30)),
 
                 Row(
                   children: <Widget>[
                     Padding(padding: EdgeInsets.all(30)),
 
                     Container(
-                      child: Image.asset("lib/images/tresure.jpg",
-                    height: 100,
-                    width: 100,
-                    fit: BoxFit.fitWidth,)
+                        child: Image.asset("lib/images/tresure.jpg",
+                          height: 80,
+                          width: 80,
+                          fit: BoxFit.fitWidth,)
                     ),
 
-                    Padding(padding: EdgeInsets.all(10)),
+                    Padding(padding: EdgeInsets.all(18)),
 
                     Text("お宝までの距離 : ${distance}",
-                    style: TextStyle(fontSize: 20),)
+                      style: TextStyle(fontSize: 12),),
+                    //TODO  distanceが近いときに通知する
                   ],
                 ),
+
+//                Padding(padding: EdgeInsets.all(30)),
+//
+//                Text("current_location : ${position}",
+//                  style: TextStyle(fontSize: 18),),
+
+
               ],
             ),
-        ),
-      )
+          ),
+        )
     );
   }
+
+  //positionにcurrentlocation内臓されている
+  //TODO currentlocationで駅スパ跡を用いる
 
   @override
   void dispose() {
@@ -160,20 +169,36 @@ class _MapPageState extends State<MapPage> {
         _gyroscopeValues = <double>[event.x, event.y, event.z];
       });
     }));
-    _streamSubscriptions.add(FlutterCompass.events.listen((double direction){
+    _streamSubscriptions.add(FlutterCompass.events.listen((double direction) {
       setState(() {
         _direction = direction;
-        print(_direction);
+//        print(_direction);
       });
     }));
   }
 
 
-  void getData(Timer timer){
+  void getStep(Timer timer){
     step_now = acc.getStep(acceralation_list);
     step_sum += step_now;
     acceralation_list.clear();
   }
+
+//  void _vibrate(){
+//    if (distance == 0) {
+//      Vibration.vibrate();
+//    }
+//  }
+
+//  Future<void> _getLocation(context) async {
+//    Position _currentPosition = await Geolocator()
+//        .getCurrentPosition(desiredAccuracy: LocationAccuracy.high); // ここで精度を「high」に指定している
+//    print(_currentPosition);
+//    setState(() {
+//      position = _currentPosition;
+//    });
+//  }
+
 }
 
 
@@ -193,12 +218,13 @@ Future<Post> fetchPost() async {
 //TODO ngrokは更新される
 
 void UserRegistRequest() async {
-  String url = "http://d11f9a85.ngrok.io/location/update";
+  String url = "http://c1d204d8.ngrok.io/location/update";
   Map<String, String> headers = {'content-type': 'application/json'};
   String body = json.encode({'name':'user_1','x':3,'y':4,'step':1});
   http.Response resp = await http.post(url, headers: headers, body: body);
 
   if (resp.statusCode != 200) {
+    print('erorr//////////////////////////////////////////////////////////////////');
     return;
   }
 //  print(json.decode(resp.body));
@@ -208,25 +234,29 @@ void UserRegistRequest() async {
 
 //これでサーバにデータを送信
 void UserStepRequest(Timer timer) async {
-  String url = "http://e739fe18.ngrok.io/location/update";
+  if(name == null) return;
+  String url = "http://c1d204d8.ngrok.io/location/update";
   Map<String, String> headers = {'content-type': 'application/json'};
-  String body = json.encode({'name':name,'step':step_now, 'direction':getDirection(_direction)});
+  String body = json.encode({'name':name,'step':step_now, "direction" : getDirection(_direction)});
   http.Response resp = await http.post(url, headers: headers, body: body);
   if (resp.statusCode != 200) {
+    print('erorr//////////////////////////////////////////////////////////////////');
     return;
   }
-  print(json.decode(resp.body));
+  print(json.decode(resp.body)["distance"]);
+  print(json.decode(resp.body)["isTreasure"]);
 //  print(resp.body);
 }
 
 void SetUserNameInMap(String username){
   name = username;
-  print('User name is set ${name} in Map');
+  print("User name is set${name} in flight");
 }
 
 String getDirection(double dir){
-  if(North <= dir && dir < West) return 'n';
-  else if(West <= dir && dir < South) return 'w';
-  else if(South <= dir && dir < East) return 's';
-  else return 'e';
+  if(north <= dir && dir < west) return "n";
+  else if(west <= dir && dir < south) return "w";
+  else if(south <= dir && dir < east) return "s";
+  else return "e";
+
 }

@@ -1,48 +1,52 @@
-import 'package:hack_future/main.dart';
 import "package:flutter/material.dart";
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-String name = '';
+//phaseページ
+//location/phase
+String name;
 
-class FlightPage extends StatefulWidget {
+class PhasePage extends StatefulWidget {
   @override
-  FlightPageState createState() => FlightPageState();
+  PhasePageState createState() => PhasePageState();
 }
 
-class FlightPageState extends State<FlightPage> {
+class PhasePageState extends State<PhasePage> {
 
-  bool _status = false;
+  bool _status = true;
   final FocusNode myFocusNode = FocusNode();
 
-  //globalkey でformの入力を行う
-
-  final _Key = GlobalKey<State>();
 
   // init the step to 0th position
-  int current_step = 0;
+  int current_phase = 0;
+  final _key = GlobalKey<State>();
+
 
   //TODO currentstepの状態で足跡を制御する.
+  //TODO サーバにnameとcurrent_stepを送る
+  //TODO ngrokは更新される
+
+
 
   List<Step> my_steps = [
     Step(
       // Title of the Step
-        title: Text("空港に向かっていますか"),
-        // Content, it can be any widget here. Using basic Text for this example
-        content: Text("", style: TextStyle(fontSize: 12),),
-        isActive: true,),
+      title: Text("空港に向かっていますか"),
+      // Content, it can be any widget here. Using basic Text for this example
+      content: Text("", style: TextStyle(fontSize: 10),),
+      isActive: true,),
     Step(
         title: Text("あなたはチェックインを終えましたか"),
-        content: Text("",style: TextStyle(fontSize: 12)),
+        content: Text("", style: TextStyle(fontSize: 10)),
         // You can change the style of the step icon i.e number, editing, etc.
         isActive: true),
     Step(
         title: Text("あなたは検査を終えましたか"),
-        content: Text("",style: TextStyle(fontSize: 12)),
+        content: Text("", style: TextStyle(fontSize: 10)),
         isActive: true),
     Step(
         title: Text("搭乗しましたか"),
-        content: Text("",style: TextStyle(fontSize: 12)),
+        content: Text("", style: TextStyle(fontSize: 10)),
         isActive: true),
   ];
 
@@ -62,7 +66,7 @@ class FlightPageState extends State<FlightPage> {
                 children: <Widget>[
                   Padding(
                       padding: EdgeInsets.only(
-                          left: 45.0, right: 25.0, top: 10.0),
+                          left: 45.0, right: 25.0, top: 50.0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment
                             .spaceBetween,
@@ -91,23 +95,24 @@ class FlightPageState extends State<FlightPage> {
                       )),
 
                   Padding(
-                      padding: EdgeInsets.only(
-                          left: 25.0, right: 25.0, top: 2.0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        children: <Widget>[
-                          Flexible(
-                            child: TextField(
-                              decoration: InputDecoration(
-                                hintText: "Enter Flight Date and Time",
-                              ),
-                              enabled: !_status,
-                              autofocus: !_status,
-
+                    padding: EdgeInsets.only(
+                        left: 25.0, right: 25.0, top: 2.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.max,
+                      children: <Widget>[
+                        Flexible(
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText: "Enter Flight Date and Time",
                             ),
+                            enabled: !_status,
+                            autofocus: !_status,
+
                           ),
-                        ],
-                      )),
+                        ),
+                      ],
+                    ),
+                  ),
 
                   !_status ? _getActionButtons() : Container(),
                 ],
@@ -116,12 +121,11 @@ class FlightPageState extends State<FlightPage> {
           ),
 
 
-
           Column(
             children: <Widget>[
               Container(
-                alignment: Alignment(-0.7,0.3),
-                child : Text("Your Flight Step",style: TextStyle(
+                alignment: Alignment(-0.7, 0.3),
+                child: Text("Your Flight Phase", style: TextStyle(
                     fontSize: 16.0,
                     fontWeight: FontWeight.bold),
                 ),
@@ -129,7 +133,7 @@ class FlightPageState extends State<FlightPage> {
 
               Stepper(
                 // Using a variable here for handling the currentStep
-                currentStep: this.current_step,
+                currentStep: this.current_phase,
                 // List the steps you would like to have
                 steps: my_steps,
                 // Define the type of Stepper style
@@ -139,17 +143,12 @@ class FlightPageState extends State<FlightPage> {
                 // Know the step that is tapped
                 onStepTapped: (step) {
                   // On hitting step itself, change the state and jump to that step
-                    // update the variable handling the current step value
-                    // jump to the tapped step
-                    current_step = step;
-                    print(current_step);
-                    print("///////////////////////////////////////////////////////");
+                  // update the variable handling the current step value
+                  // jump to the tapped step
+                  current_phase = step;
 
-                    //TODO ここで現時点でのステップをサーバに送る
+                  UserPhaseRequest(current_phase);
 
-                    UserPhaseRequest(current_step);
-                  // Log function call
-                  print("onStepTapped : " + step.toString());
                 },
 
 
@@ -158,14 +157,16 @@ class FlightPageState extends State<FlightPage> {
                   setState(() {
                     // update the variable handling the current step value
                     // going back one step i.e subtracting 1, until its 0
-                    if (current_step > 0) {
-                      current_step = current_step - 1;
+                    if (current_phase > 0) {
+                      current_phase = current_phase - 1;
                     } else {
-                      current_step = 0;
+                      current_phase = 0;
                     }
                   });
-                  // Log function call
-                  print("onStepCancel : " + current_step.toString());
+
+                  //TODO ここで,現時点でのステップをサーバに送る
+                  UserPhaseRequest(current_phase);
+
                 },
                 // On hitting continue button, change the state
 
@@ -174,14 +175,16 @@ class FlightPageState extends State<FlightPage> {
                   setState(() {
                     // update the variable handling the current step value
                     // going back one step i.e adding 1, until its the length of the step
-                    if (current_step < my_steps.length - 1) {
-                      current_step = current_step + 1;
+                    if (current_phase < my_steps.length - 1) {
+                      current_phase = current_phase + 1;
                     } else {
-                      current_step = 0;
+                      current_phase = 0;
                     }
                   });
-                  // Log function call
-                  print("onStepContinue : " + current_step.toString());
+
+                  //TODO ここで,現時点でのステップをサーバに送る
+                  UserPhaseRequest(current_phase);
+
                 },
               )
             ],
@@ -263,14 +266,17 @@ class FlightPageState extends State<FlightPage> {
     );
   }
 }
+
 //これでサーバにデータを送信
-void UserPhaseRequest(int current_step) async {
-  String url = "http://e739fe18.ngrok.io/location/phase";
+void UserPhaseRequest(int current_phase) async {
+  debugPrint("Current_Phase : ${current_phase}");
+  if(name == null) return;
+  String url = "http://c1d204d8.ngrok.io/location/phase";
   Map<String, String> headers = {'content-type': 'application/json'};
-  String body = json.encode({'name':name,'current_phase':current_step});
+  String body = json.encode({'name':name,'current_phase':current_phase});
   http.Response resp = await http.post(url, headers: headers, body: body);
   if (resp.statusCode != 200) {
-    print('erorrrrrrrrrrrrrrrrrrrrrr');
+    print('erorr//////////////////////////////////////////////////////////////////');
     return;
   }
   print(json.decode(resp.body));
@@ -279,5 +285,5 @@ void UserPhaseRequest(int current_step) async {
 
 void SetUserNameInFlight(String username){
   name = username;
-  print('User name is set ${name} in flight');
+  print("User name is set ${name} in flight");
 }
